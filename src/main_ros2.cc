@@ -40,7 +40,7 @@ public:
     this->declare_parameter<std::string>("target_frame", "");
     this->declare_parameter<std::string>("fixed_frame", "");
     rclcpp::QoS qos(rclcpp::KeepLast(7));
-    lidarPublisher = this->create_publisher<sensor_msgs::msg::PointCloud2>("pandar");
+    lidarPublisher = this->create_publisher<sensor_msgs::msg::PointCloud2>("rslidar_points", rclcpp::SensorDataQoS());
     packetPublisher = this->create_publisher<hesai_lidar::msg::PandarScan>("pandar_packets", qos);
     this->timer_callback();
   }
@@ -54,6 +54,17 @@ private:
       pcl_conversions::toPCL(rclcpp::Time(timestamp), cld->header.stamp);
       sensor_msgs::msg::PointCloud2 output;
       pcl::toROSMsg(*cld, output);
+      output.header.stamp = this->now();
+      int pos = 0;
+      for (auto field : output.fields)
+      {
+        if (field.name == "timestamp")
+        {
+          // output.fields[pos].name = "time";
+          break;
+        }
+        ++pos;
+      }
       lidarPublisher->publish(output);
 #ifdef PRINT_FLAG
         std::cout.setf(ios::fixed);
